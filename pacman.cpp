@@ -8,25 +8,31 @@
 
 using namespace std;
 
+// Struction used to strore the value of the ghost's location coordinates
 struct ghostLocation {
 	int x;
 	int y;
 };
 
-const int MAX_FOOD = 10;
+const int MAX_FOOD = 100;
 const char FOOD_CHAR = '.';
 const char PACMAN_CHAR = 'C';
 const char GHOST_CHAR = '9';
-const int GENERATE_FOOD_EVERY_SECOND = 10;
+const double GENERATE_FOOD_EVERY_SECOND = 0.5; // Value is in seconds
 const int SCORE_PER_FOOD = 5;
-const int GHOST_RESPAWN_TIME = 20;
+const int GHOST_RESPAWN_TIME = 10; // Value is in seconds
 
-int currentSpawnedFood = 0;
+// Prints the Array "map" on the screen
+void printMap(); 
 
-void printMap();
-void spawnFood();
+// Spawns Food at a random location in the map
+void spawnFood(int& currentSpawnedFood);
+
+// Spawns Ghost at a random location in map and returns its (x,y) coordinates of spawned location
 ghostLocation spawnGhost();
-void moveGhost(int &x, int &y);
+
+// Moves the Ghost on the map
+void moveGhost(int& x, int& y, bool& gameOver, ghostLocation& foodLocation);
 
 //Default map
 char map[25][25] = {
@@ -49,7 +55,7 @@ char map[25][25] = {
 	{'#', ' ', ' ', ' ', ' ', ' ', ' ', '#', ' ', ' ', '#', '#', '#', ' ', '#', '#', '#', ' ', ' ', ' ', '#', ' ', ' ', ' ', '#'},
 	{'#', ' ', '#', '#', '#', ' ', ' ', '#', ' ', ' ', ' ', ' ', ' ', ' ', '#', ' ', ' ', ' ', ' ', ' ', '#', ' ', ' ', ' ', '#'},
 	{'#', ' ', ' ', ' ', '#', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '#', ' ', ' ', ' ', ' ', '#', '#', '#', '#', ' ', '#'},
-	{'#', ' ', ' ', ' ', '#', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '#', ' ', ' ', '#', '#', '#', ' ', ' ', ' ', ' ', '#'},
+	{'#', ' ', ' ', ' ', '#', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '#', '#', '#', ' ', ' ', ' ', ' ', '#'},
 	{'#', ' ', ' ', ' ', '#', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '#', ' ', ' ', '#', ' ', ' ', ' ', ' ', ' ', ' ', '#'},
 	{'#', ' ', ' ', ' ', '#', '#', ' ', ' ', ' ', '#', '#', '#', '#', '#', '#', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '#'},
 	{'#', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '#', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '#', ' ', ' ', ' ', ' ', ' ', ' ', '#'},
@@ -59,24 +65,33 @@ char map[25][25] = {
 
 int main()
 {
-	int x, y;
-	int waitTenSecondCounter = 0;
-	int waitGhostRespawnCounter = 0;
+	int x, y; //The location of our character (pacman)
+	int waitTenSecondCounter = 0; //counter to spawn food
+	int waitGhostRespawnCounter = 0; // counter to spawn ghost
 	int Score = 0;
-	int counterGhostSpawned = 0;
-	ghostLocation ghostsLocationsArray[100];
-	ghostLocation newGhost;
+	double totalTime = 0; //total time elapsed during the program runtime
+	int counterGhostSpawned = 0; // Holds the number of ghosts currently spawned
+	int currentSpawnedFood = 0; // Holds the number of currently spawned food
+	int countFoodToRespawn = 0; // counts how many food to respawn
 
+	bool gameOver = false; // Checks whether the character has died or game is over
+
+	ghostLocation ghostsLocationsArray[100]; //Stores the location
+	ghostLocation currentFoodLocation; // Stores the location of Food to respawn if ghost has eaten it
+	ghostLocation allFoodLocations[100]; // Store the location of all Foods to respawn
+
+	//Default location of our spawn point of character (pacman)
 	x = 10; y = 10;
 
 	// Infinite Loop to run the game
 	while (1)
 	{
 		system("CLS");
+		totalTime += 0.1;
 
 		if (GetAsyncKeyState(VK_UP))
 		{
-			if (map[y - 1][x] != '#' && map[y - 1][x] != FOOD_CHAR)
+			if (map[y - 1][x] == ' ')
 			{
 				map[y][x] = ' ';
 				y--;
@@ -89,10 +104,12 @@ int main()
 				currentSpawnedFood--;
 				Score += SCORE_PER_FOOD;
 			}
+			else if (map[y - 1][x] == GHOST_CHAR)
+				gameOver = true;
 		}
 		else if (GetAsyncKeyState(VK_DOWN))
 		{
-			if (map[y + 1][x] != '#' && map[y + 1][x] != FOOD_CHAR)
+			if (map[y + 1][x] == ' ')
 			{
 				map[y][x] = ' ';
 				y++;
@@ -105,10 +122,12 @@ int main()
 				currentSpawnedFood--;
 				Score += SCORE_PER_FOOD;
 			}
+			else if (map[y - 1][x] == GHOST_CHAR)
+				gameOver = true;
 		}
 		else if (GetAsyncKeyState(VK_LEFT))
 		{
-			if (map[y][x-1] != '#' && map[y][x-1] != FOOD_CHAR)
+			if (map[y][x-1] == ' ')
 			{
 				map[y][x] = ' ';
 				x--;
@@ -121,10 +140,12 @@ int main()
 				currentSpawnedFood--;
 				Score += SCORE_PER_FOOD;
 			}
+			else if (map[y - 1][x] == GHOST_CHAR)
+				gameOver = true;
 		}
 		else if (GetAsyncKeyState(VK_RIGHT))
 		{
-			if (map[y][x+1] != '#' && map[y][x+1] != FOOD_CHAR)
+			if (map[y][x+1] == ' ')
 			{
 				map[y][x] = ' ';
 				x++;
@@ -137,15 +158,17 @@ int main()
 				currentSpawnedFood--;
 				Score += SCORE_PER_FOOD;
 			}
+			else if (map[y - 1][x] == GHOST_CHAR)
+				gameOver = true;
 		}
 
 		map[y][x] = PACMAN_CHAR;
 
 		waitTenSecondCounter++;
-		if (waitTenSecondCounter == GENERATE_FOOD_EVERY_SECOND)
+		if (waitTenSecondCounter == GENERATE_FOOD_EVERY_SECOND * 10)
 		{
 			waitTenSecondCounter = 0;
-			spawnFood();
+			spawnFood(currentSpawnedFood);
 		}
 
 		waitGhostRespawnCounter++;
@@ -158,11 +181,27 @@ int main()
 
 		cout << "Score: " << Score << endl;
 	
+		//Move all Ghosts
 		for (int i = 0; i < counterGhostSpawned; i++)
 		{
-			moveGhost(ghostsLocationsArray[i].x, ghostsLocationsArray[i].y);
+			currentFoodLocation.x = -1;
+			currentFoodLocation.y = -1;
+			moveGhost(ghostsLocationsArray[i].x, ghostsLocationsArray[i].y, gameOver, currentFoodLocation);
+			if (currentFoodLocation.x != -1)
+			{
+				allFoodLocations[countFoodToRespawn] = currentFoodLocation;
+				countFoodToRespawn++;
+			}
 		}
 		
+		if (gameOver)
+			break;
+
+		for (int i = 0; i < countFoodToRespawn; i++)
+		{
+			map[allFoodLocations[i].y][allFoodLocations[i].x] = FOOD_CHAR;
+		}
+		countFoodToRespawn = 0;
 
 		printMap();
 
@@ -170,7 +209,13 @@ int main()
 		Sleep(100);
 	}
 
-	
+	//Game Overed, Display Score
+	system("CLS");
+	cout << "Your Total Score was: " << Score << endl;
+	cout << "You managed to survive for " << totalTime << " seconds..!" << endl;
+
+	string dummy;
+	cin >> dummy;
 }
 
 void printMap()
@@ -185,14 +230,14 @@ void printMap()
 	}
 }
 
-void spawnFood()
+void spawnFood(int& currentSpawnedFood)
 {
 	int x, y;
 	bool isCorrectLocation = false;
 
 	srand(time(0));
 
-	if (currentSpawnedFood >= 10)
+	if (currentSpawnedFood >= MAX_FOOD)
 		return;
 
 	while (!isCorrectLocation)
@@ -200,7 +245,7 @@ void spawnFood()
 		x = rand() % 25;
 		y = rand() % 25;
 
-		if (map[y][x] != '#' && map[y][x] != PACMAN_CHAR)
+		if (map[y][x] != '#' && map[y][x] != PACMAN_CHAR && map[y][x] != FOOD_CHAR && map[y][x] != GHOST_CHAR)
 		{
 			isCorrectLocation = true;
 			currentSpawnedFood++;
@@ -225,7 +270,7 @@ ghostLocation spawnGhost()
 		x = rand() % 25;
 		y = rand() % 25;
 
-		if (map[y][x] != '#' && map[y][x] != PACMAN_CHAR)
+		if (map[y][x] != '#' && map[y][x] != PACMAN_CHAR && map[y][x] != FOOD_CHAR && map[y][x] != GHOST_CHAR)
 		{
 			isCorrectLocation = true;
 		}
@@ -240,7 +285,7 @@ ghostLocation spawnGhost()
 	return temp;
 }
 
-void moveGhost(int &x, int &y)
+void moveGhost(int &x, int &y, bool& gameOver, ghostLocation& foodLocation)
 {
 	bool isCorrectLocation = false;
 
@@ -252,17 +297,18 @@ void moveGhost(int &x, int &y)
 
 		if (direction == 1)
 		{
-			if (map[y - 1][x] != '#')
+			if (map[y - 1][x] != '#' && map[y - 1][x] != GHOST_CHAR)
 			{
 				//MOVE UP
 				map[y][x] = ' ';
 				y--;
 				isCorrectLocation = true;
 			}
+
 		}
 		else if (direction == 2)
 		{
-			if (map[y + 1][x] != '#')
+			if (map[y + 1][x] != '#' && map[y + 1][x] != GHOST_CHAR)
 			{
 				//MOVE DOWN
 				map[y][x] = ' ';
@@ -272,7 +318,7 @@ void moveGhost(int &x, int &y)
 		}
 		else if (direction == 3)
 		{
-			if (map[y][x + 1] != '#')
+			if (map[y][x + 1] != '#' && map[y][x + 1] != GHOST_CHAR)
 			{
 				//MOVE Right
 				map[y][x] = ' ';
@@ -282,7 +328,7 @@ void moveGhost(int &x, int &y)
 		}
 		else if (direction == 4)
 		{
-			if (map[y][x - 1] != '#')
+			if (map[y][x - 1] != '#' && map[y][x - 1] != GHOST_CHAR)
 			{
 				//MOVE Left
 				map[y][x] = ' ';
@@ -292,5 +338,14 @@ void moveGhost(int &x, int &y)
 		}
 	}
 
+	if (map[y][x] == PACMAN_CHAR)
+		gameOver = true;
+
+	if (map[y][x] == FOOD_CHAR)
+	{
+		foodLocation.x = x;
+		foodLocation.y = y;
+	}
+		
 	map[y][x] = GHOST_CHAR;
 }
