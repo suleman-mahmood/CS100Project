@@ -32,7 +32,7 @@ void spawnFood(int& currentSpawnedFood);
 ghostLocation spawnGhost();
 
 // Moves the Ghost on the map
-void moveGhost(int& x, int& y, bool& gameOver, ghostLocation& foodLocation);
+void moveGhost(int& x, int& y, bool& gameOver);
 
 //Default map
 char map[25][25] = {
@@ -72,13 +72,10 @@ int main()
 	double totalTime = 0; //total time elapsed during the program runtime
 	int counterGhostSpawned = 0; // Holds the number of ghosts currently spawned
 	int currentSpawnedFood = 0; // Holds the number of currently spawned food
-	int countFoodToRespawn = 0; // counts how many food to respawn
 
 	bool gameOver = false; // Checks whether the character has died or game is over
 
 	ghostLocation ghostsLocationsArray[100]; //Stores the location
-	ghostLocation currentFoodLocation; // Stores the location of Food to respawn if ghost has eaten it
-	ghostLocation allFoodLocations[100]; // Store the location of all Foods to respawn
 
 	//Default location of our spawn point of character (pacman)
 	x = 10; y = 10;
@@ -88,12 +85,6 @@ int main()
 	{
 		system("CLS");
 		totalTime += 0.1;
-
-		for (int i = 0; i < countFoodToRespawn; i++)
-		{
-			map[allFoodLocations[i].y][allFoodLocations[i].x] = FOOD_CHAR;
-		}
-		countFoodToRespawn = 0;
 
 		if (GetAsyncKeyState(VK_UP))
 		{
@@ -190,14 +181,7 @@ int main()
 		//Move all Ghosts
 		for (int i = 0; i < counterGhostSpawned; i++)
 		{
-			currentFoodLocation.x = -1;
-			currentFoodLocation.y = -1;
-			moveGhost(ghostsLocationsArray[i].x, ghostsLocationsArray[i].y, gameOver, currentFoodLocation);
-			if (currentFoodLocation.x != -1)
-			{
-				allFoodLocations[countFoodToRespawn] = currentFoodLocation;
-				countFoodToRespawn++;
-			}
+			moveGhost(ghostsLocationsArray[i].x, ghostsLocationsArray[i].y, gameOver);
 		}
 		
 		if (gameOver)
@@ -285,7 +269,7 @@ ghostLocation spawnGhost()
 	return temp;
 }
 
-void moveGhost(int &x, int &y, bool& gameOver, ghostLocation& foodLocation)
+void moveGhost(int &x, int &y, bool& gameOver)
 {
 	bool isCorrectLocation = false;
 
@@ -340,12 +324,6 @@ void moveGhost(int &x, int &y, bool& gameOver, ghostLocation& foodLocation)
 
 	if (map[y][x] == PACMAN_CHAR)
 		gameOver = true;
-
-	if (map[y][x] == FOOD_CHAR)
-	{
-		foodLocation.x = x;
-		foodLocation.y = y;
-	}
 		
 	map[y][x] = GHOST_CHAR;
 }
