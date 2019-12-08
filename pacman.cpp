@@ -72,6 +72,8 @@ int main()
 	double totalTime = 0; //total time elapsed during the program runtime
 	int counterGhostSpawned = 0; // Holds the number of ghosts currently spawned
 	int currentSpawnedFood = 0; // Holds the number of currently spawned food
+	
+	string startGame = "";
 
 	bool gameOver = false; // Checks whether the character has died or game is over
 
@@ -79,6 +81,38 @@ int main()
 
 	//Default location of our spawn point of character (pacman)
 	x = 10; y = 10;
+
+	//Prompts the user to enter start to begin the game
+	while (startGame != "start")
+	{
+		system("CLS");
+
+		cout << "-----------------------------------------" << endl;
+		cout << "\t\t PACMAN" << endl;
+		cout << "-----------------------------------------" << endl;
+
+		cout << endl;
+		cout << "Enter \"start\" to start playing Pacman..!" << endl;
+
+		cin >> startGame;
+	}
+
+	//Shows the countdown on the screen
+	int count = 3;
+	while (count >= 1)
+	{
+		system("CLS");
+		cout << endl;
+		cout << endl;
+		cout << endl;
+
+		cout << "\t\t GET READY!!" << endl;
+		cout << endl;
+		cout << "\t Starting your game in " << count << " seconds..!!" << endl;
+		count--;
+
+		Sleep(1000);
+	}
 
 	// Infinite Loop to run the game
 	while (1)
@@ -208,11 +242,13 @@ int main()
 
 	//Game Overed, Display Score
 	system("CLS");
-	cout << "Your Total Score was: " << Score << endl;
-	cout << "You managed to survive for " << totalTime << " seconds..!" << endl;
+	cout << endl << endl;
+	cout << "\t\t Your Total Score was: " << Score << endl << endl;
+	cout << "\t You managed to survive for " << totalTime << " seconds..!" << endl << endl;
 
-	string dummy;
-	cin >> dummy;
+	string temp;
+	cin >> temp;
+
 }
 
 void printMap()
