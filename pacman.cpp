@@ -89,6 +89,12 @@ int main()
 		system("CLS");
 		totalTime += 0.1;
 
+		for (int i = 0; i < countFoodToRespawn; i++)
+		{
+			map[allFoodLocations[i].y][allFoodLocations[i].x] = FOOD_CHAR;
+		}
+		countFoodToRespawn = 0;
+
 		if (GetAsyncKeyState(VK_UP))
 		{
 			if (map[y - 1][x] == ' ')
@@ -196,12 +202,6 @@ int main()
 		
 		if (gameOver)
 			break;
-
-		for (int i = 0; i < countFoodToRespawn; i++)
-		{
-			map[allFoodLocations[i].y][allFoodLocations[i].x] = FOOD_CHAR;
-		}
-		countFoodToRespawn = 0;
 
 		printMap();
 
